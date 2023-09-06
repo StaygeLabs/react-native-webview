@@ -213,7 +213,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     // alipay+ settings
     settings.setSupportZoom(true);
-    settings.setAppCacheEnabled(true);
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
       settings.setAllowFileAccessFromFileURLs(false);
