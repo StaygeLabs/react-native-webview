@@ -12,7 +12,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.Manifest;
-import android.media.MediaScannerConnection;
 import android.net.http.SslError;
 import android.net.Uri;
 import android.os.Build;
@@ -20,7 +19,6 @@ import android.os.Environment;
 import android.os.Message;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -81,7 +79,6 @@ import com.facebook.react.uimanager.events.ContentSizeChangeEvent;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
 import com.reactnativecommunity.webview.RNCWebViewModule.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState;
-import com.reactnativecommunity.webview.events.TopDownloadEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -94,10 +91,6 @@ import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.IllegalArgumentException;
 import java.net.MalformedURLException;
@@ -231,48 +224,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     webView.setDownloadListener(new DownloadListener() {
       public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
-        RNCWebViewModule module = getModule(reactContext);
-        if(url.startsWith("data:")) {
-          if (module.grantFileDownloaderPermissions(getDownloadingMessage(), getLackPermissionToDownloadMessage())) {
-            File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsoluteFile();
-            String filetype = url.substring(url.indexOf("/") + 1, url.indexOf(";"));
-            String filename = System.currentTimeMillis() + "." + filetype;
-            File file = new File(path, filename);
-            try {
-              if(!path.exists())
-                path.mkdirs();
-              if(!file.exists())
-                file.createNewFile();
-
-              String base64EncodedString = url.substring(url.indexOf(",") + 1);
-              byte[] decodedBytes = Base64.decode(base64EncodedString, Base64.DEFAULT);
-              OutputStream os = new FileOutputStream(file);
-              os.write(decodedBytes);
-              os.close();
-
-              MediaScannerConnection.scanFile(reactContext.getApplicationContext(),
-                new String[]{file.toString()}, null,
-                new MediaScannerConnection.OnScanCompletedListener() {
-                  public void onScanCompleted(String path, Uri uri) {
-                    Log.i("ExternalStorage", "Scanned " + path + ":");
-                    Log.i("ExternalStorage", "-> uri=" + uri);
-                  }
-                });
-
-              WritableMap event = Arguments.createMap();
-              event.putString("url", url);
-              event.putString("contentDisposition", contentDisposition);
-              event.putString("mimetype", mimetype);
-              webView.dispatchEvent(
-                webView,
-                new TopDownloadEvent(webView.getId(), event));
-            } catch (IOException e) {
-              Log.w(TAG, "Error writing " + file, e);
-            }
-          }
-          return;
-        }
         webView.setIgnoreErrFailedForThisURL(url);
+
+        RNCWebViewModule module = getModule(reactContext);
 
         DownloadManager.Request request;
         try {
@@ -760,7 +714,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(ScrollEventType.getJSEventName(ScrollEventType.SCROLL), MapBuilder.of("registrationName", "onScroll"));
     export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
     export.put(TopRenderProcessGoneEvent.EVENT_NAME, MapBuilder.of("registrationName", "onRenderProcessGone"));
-    export.put(TopDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onDownloadBase64"));
     return export;
   }
 
