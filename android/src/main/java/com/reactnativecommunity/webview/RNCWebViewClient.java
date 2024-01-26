@@ -1,10 +1,14 @@
 package com.reactnativecommunity.webview;
 
 import android.annotation.TargetApi;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.HttpAuthHandler;
 import android.webkit.RenderProcessGoneDetail;
@@ -29,9 +33,14 @@ import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
 import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
+import com.reactnativecommunity.webview.events.TopMessageEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class RNCWebViewClient extends WebViewClient {
@@ -89,6 +98,81 @@ public class RNCWebViewClient extends WebViewClient {
         final RNCWebView rncWebView = (RNCWebView) view;
         final boolean isJsDebugging = ((ReactContext) view.getContext()).getJavaScriptContextHolder().get() == 0;
 
+        if (!android.webkit.URLUtil.isNetworkUrl(url) && !android.webkit.URLUtil.isJavaScriptUrl(url)) {
+            final Uri uri;
+            Intent intent = null;
+
+            try {
+                uri = Uri.parse(url);
+                intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+
+            } catch (Exception e){
+                return false;
+            }
+
+            if ("intent".equals(uri.getScheme())) {
+                try {
+                    Log.d("LOG", "intent startActivity");
+                    WritableMap data = createIntentEvent(view, uri.toString(), intent);
+                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    return true;
+                } catch (ActivityNotFoundException e) {
+                    final String packageName = intent.getPackage();
+                    Log.d("LOG", "ActivityNotFoundException packageName :" + packageName);
+                    if (!TextUtils.isEmpty(packageName)) {
+                        WritableMap data = createIntentEvent(view, "market://details?id=" + packageName, intent);
+                        ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                        return true;
+                    }
+                }
+            } else if ("supertoss".equals(uri.getScheme())) {//TOSS
+                try {
+                    Log.d("LOG", "TOSS startActivity");
+                    WritableMap data = createIntentEvent(view, uri.toString(), intent);
+                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    return true;
+                } catch (ActivityNotFoundException e) {
+                    Log.d("LOG", "Activi tyNotFoundException TOSS");
+                    WritableMap data = createIntentEvent(view, "market://details?id=viva.republica.toss", intent);
+                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            } else if("nidlogin".equals(uri.getScheme())) {//NAVERPAY
+                try {
+                    Log.d("LOG", "NAVERPAY startActivity");
+                    WritableMap data = createIntentEvent(view, uri.toString(), intent);
+                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    return true;
+                } catch (ActivityNotFoundException e) {
+                    Log.d("LOG", "ActivityNotFoundException NAVERPAY");
+                    WritableMap data = createIntentEvent(view, "market://details?id=com.nhn.android.search", intent);
+                    return true;
+                }
+                catch (Exception e) {
+                    return false;
+                }
+            } else {
+                try {
+                    Log.d("LOG", "else startActivity");
+                    WritableMap data = createIntentEvent(view, uri.toString(), intent);
+                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    return true;
+                } catch (ActivityNotFoundException e) {
+                    final String packageName = intent.getPackage();
+                    Log.d("LOG", "4091_else startActivity ActivityNotFoundException packageName :" + packageName);
+                    if (!TextUtils.isEmpty(packageName)) {
+                        WritableMap data = createIntentEvent(view, "market://details?id=" + packageName, intent);
+                        ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                        return true;
+                    }
+                } catch (Exception e) {
+                    return false;
+                }
+            }
+        }
+
         if (!isJsDebugging && rncWebView.mCatalystInstance != null) {
             final Pair<Double, AtomicReference<RNCWebViewModuleImpl.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState>> lock = RNCWebViewModuleImpl.shouldOverrideUrlLoadingLock.getNewLock();
             final double lockIdentifier = lock.first;
@@ -131,6 +215,16 @@ public class RNCWebViewClient extends WebViewClient {
                     createWebViewEvent(view, url)));
             return true;
         }
+    }
+
+    protected WritableMap createIntentEvent(WebView webView, String url, Intent intent) {
+        WritableMap event = createWebViewEvent(webView, url);
+        Map data = new HashMap();
+        data.put("id", "INTENT");
+        data.put("scheme", intent.getScheme());
+        data.put("package", intent.getPackage());
+        event.putString("data", (new JSONObject(data)).toString());
+        return event;
     }
 
     @TargetApi(Build.VERSION_CODES.N)
