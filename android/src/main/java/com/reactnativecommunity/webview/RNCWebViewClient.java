@@ -114,14 +114,14 @@ public class RNCWebViewClient extends WebViewClient {
                 try {
                     Log.d("LOG", "intent startActivity");
                     WritableMap data = createIntentEvent(view, uri.toString(), intent);
-                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    rncWebView.sendDirectMessage("onMessage", data);
                     return true;
                 } catch (ActivityNotFoundException e) {
                     final String packageName = intent.getPackage();
                     Log.d("LOG", "ActivityNotFoundException packageName :" + packageName);
                     if (!TextUtils.isEmpty(packageName)) {
                         WritableMap data = createIntentEvent(view, "market://details?id=" + packageName, intent);
-                        ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                        rncWebView.sendDirectMessage("onMessage", data);
                         return true;
                     }
                 }
@@ -129,12 +129,12 @@ public class RNCWebViewClient extends WebViewClient {
                 try {
                     Log.d("LOG", "TOSS startActivity");
                     WritableMap data = createIntentEvent(view, uri.toString(), intent);
-                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    rncWebView.sendDirectMessage("onMessage", data);
                     return true;
                 } catch (ActivityNotFoundException e) {
                     Log.d("LOG", "Activi tyNotFoundException TOSS");
                     WritableMap data = createIntentEvent(view, "market://details?id=viva.republica.toss", intent);
-                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    rncWebView.sendDirectMessage("onMessage", data);
                     return true;
                 } catch (Exception e) {
                     return false;
@@ -143,7 +143,7 @@ public class RNCWebViewClient extends WebViewClient {
                 try {
                     Log.d("LOG", "NAVERPAY startActivity");
                     WritableMap data = createIntentEvent(view, uri.toString(), intent);
-                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    rncWebView.sendDirectMessage("onMessage", data);
                     return true;
                 } catch (ActivityNotFoundException e) {
                     Log.d("LOG", "ActivityNotFoundException NAVERPAY");
@@ -157,14 +157,14 @@ public class RNCWebViewClient extends WebViewClient {
                 try {
                     Log.d("LOG", "else startActivity");
                     WritableMap data = createIntentEvent(view, uri.toString(), intent);
-                    ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                    rncWebView.sendDirectMessage("onMessage", data);
                     return true;
                 } catch (ActivityNotFoundException e) {
                     final String packageName = intent.getPackage();
                     Log.d("LOG", "4091_else startActivity ActivityNotFoundException packageName :" + packageName);
                     if (!TextUtils.isEmpty(packageName)) {
                         WritableMap data = createIntentEvent(view, "market://details?id=" + packageName, intent);
-                        ((RNCWebView) view).dispatchEvent(view, new TopMessageEvent(view.getId(), data));
+                        rncWebView.sendDirectMessage("onMessage", data);
                         return true;
                     }
                 } catch (Exception e) {
